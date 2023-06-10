@@ -1,0 +1,10 @@
+{
+  "private": "true",
+  "devDependencies": {
+    "elm-format": "^0.8.5",
+    "elm-test": "^0.19.1-revision12"
+  },
+  "scripts": {
+    "test": "elm-test"
+  }
+}
