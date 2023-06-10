@@ -47,6 +47,7 @@ Executable elm
         builder/src
         terminal/impl
         terminal/src
+        debug/src
 
     other-extensions:
         TemplateHaskell
@@ -201,6 +202,8 @@ Executable elm
         Type.Unify
         Type.UnionFind
         Paths_elm
+
+        DebugInstances
 
     Build-depends:
         ansi-terminal >= 0.8 && < 0.9,
