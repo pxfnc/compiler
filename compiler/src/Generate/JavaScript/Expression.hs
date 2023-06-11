@@ -130,7 +130,7 @@ generate mode expression =
 
     Opt.Destruct (Opt.Destructor name path) body ->
       let
-        pathDef = JS.Var (JsName.fromLocal name) (generatePath mode path)
+        pathDef = JS.Let (JsName.fromLocal name) (generatePath mode path)
       in
       JsBlock $ pathDef : codeToStmtList (generate mode body)
 
@@ -702,8 +702,8 @@ generateTailCall mode name args =
       JS.ExprStmt $
         JS.Assign (JS.LRef (JsName.fromLocal argName)) (JS.Ref (JsName.makeTemp argName))
   in
-  JS.Vars (map toTempVars args)
-  : map toRealVars args
+  map (uncurry JS.Let . toTempVars) args 
+  ++ map toRealVars args
   ++ [ JS.Continue (Just (JsName.fromLocal name)) ]
 
 

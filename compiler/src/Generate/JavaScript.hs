@@ -320,7 +320,7 @@ generateRealCycle home (name, _) =
     realName = JsName.fromGlobal home name
   in
   JS.Block
-    [ JS.Var realName (JS.Call (JS.Ref safeName) [])
+    [ JS.Let realName (JS.Call (JS.Ref safeName) [])
     , JS.ExprStmt $ JS.Assign (JS.LRef safeName) $
         JS.Function Nothing [] [ JS.Return (JS.Ref realName) ]
     ]
@@ -458,7 +458,7 @@ generateManager mode graph (Opt.Global home@(ModuleName.Canonical _ moduleName) 
 
 generateLeaf :: ModuleName.Canonical -> Name.Name -> JS.Stmt
 generateLeaf home@(ModuleName.Canonical _ moduleName) name =
-  JS.Var (JsName.fromGlobal home name) $
+  JS.Let (JsName.fromGlobal home name) $
     JS.Call leaf [ JS.String (Name.toBuilder moduleName) ]
 
 

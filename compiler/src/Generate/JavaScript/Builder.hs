@@ -85,6 +85,7 @@ data Stmt
   | Throw Expr
   | Return Expr
   | Var Name Expr
+  | Let Name Expr
   | Vars [(Name, Expr)]
   | FunctionStmt Name [Name] [Stmt]
 
@@ -258,6 +259,9 @@ fromStmt level@(Level indent nextLevel) statement =
     Var name expr ->
       indent <> "var " <> Name.toBuilder name <> " = " <> snd (fromExpr level Whatever expr) <> ";\n"
 
+    Let name expr ->
+      indent <> "let " <> Name.toBuilder name <> " = " <> snd (fromExpr level Whatever expr) <> ";\n"
+
     Vars [] ->
       mempty
 
@@ -281,11 +285,15 @@ fromClause level@(Level indent nextLevel) clause =
   case clause of
     Case expr stmts ->
       indent <> "case " <> snd (fromExpr level Whatever expr) <> ":\n"
+      <> indent <> "{\n"
       <> fromStmtBlock nextLevel stmts
+      <> indent <> "}\n"
 
     Default stmts ->
       indent <> "default:\n"
+      <> indent <> "{\n"
       <> fromStmtBlock nextLevel stmts
+      <> indent <> "}\n"
 
 
 
