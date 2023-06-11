@@ -700,11 +700,11 @@ generateTailCall mode name args =
 
     toRealVars (argName, _) =
       JS.ExprStmt $
-        JS.Assign (JS.LRef (JsName.fromLocal argName)) (JS.Ref (JsName.makeTemp argName))
+        JS.Assign (JS.LRef (JsName.fromLocalForTailDef argName)) (JS.Ref (JsName.makeTemp argName))
   in
   JS.Vars (map toTempVars args)
   : map toRealVars args
-  ++ [ JS.Continue (Just (JsName.fromLocal name)) ]
+  ++ [ JS.Return (JS.Ref (JsName.fromLocalForLoop name))]
 
 
 
@@ -723,11 +723,23 @@ generateDef mode def =
 
 generateTailDef :: Mode.Mode -> Name.Name -> [Name.Name] -> Opt.Expr -> Code
 generateTailDef mode name argNames body =
-  generateFunction (map JsName.fromLocal argNames) $ JsBlock $
-    [ JS.Labelled (JsName.fromLocal name) $
-        JS.While (JS.Bool True) $
-          codeToStmt $ generate mode body
-    ]
+  let loopName = JsName.fromLocalForLoop name
+      resultName = JsName.fromLocalForReturnValue name
+   in generateFunction (map JsName.fromLocalForTailDef argNames) $
+        JsBlock
+          [ JS.Var loopName (JS.Object []),
+            JS.Var resultName (JS.Ref loopName),
+            JS.While (JS.Infix JS.OpEq (JS.Ref loopName) (JS.Ref resultName)) $
+              JS.ExprStmt . JS.Assign (JS.LRef resultName) $
+                JS.Call
+                  ( JS.Function
+                      Nothing
+                      (map JsName.fromLocal argNames)
+                      [codeToStmt (generate mode body)]
+                  )
+                  (map (JS.Ref . JsName.fromLocalForTailDef) argNames),
+            JS.Return (JS.Ref resultName)
+          ]
 
 
 

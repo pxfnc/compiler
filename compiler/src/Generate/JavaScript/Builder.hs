@@ -429,11 +429,14 @@ fromExpr level@(Level indent nextLevel@(Level deeperIndent _)) grouping expressi
         let
           (_      , funcB) = fromExpr level Atomic function
           (anyMany, argsB) = linesMap (fromExpr nextLevel Whatever) args
+          func = case function of
+              Function {} -> "(" <> funcB <> ")"
+              _ -> funcB
         in
         if anyMany then
-          funcB <> "(\n" <> deeperIndent <> commaNewlineSep level argsB <> ")"
+          func <> "(\n" <> deeperIndent <> commaNewlineSep level argsB <> ")"
         else
-          funcB <> "(" <> commaSep argsB <> ")"
+          func <> "(" <> commaSep argsB <> ")"
 
     Function maybeName args stmts ->
       (,) Many $

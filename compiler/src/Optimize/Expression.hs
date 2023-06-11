@@ -23,7 +23,8 @@ import qualified Optimize.Case as Case
 import qualified Optimize.Names as Names
 import qualified Reporting.Annotation as A
 
-
+import qualified Debug.Trace
+import DebugInstances ()
 
 -- OPTIMIZE
 
@@ -39,10 +40,11 @@ optimize cycle (A.At region expression) =
       pure (Opt.VarLocal name)
 
     Can.VarTopLevel home name ->
-      if Set.member name cycle then
-        pure (Opt.VarCycle home name)
-      else
-        Names.registerGlobal home name
+      Debug.Trace.trace ("consume Can.VarTopLevel " <> Name.toChars name) $
+        if Set.member name cycle then
+          pure (Opt.VarCycle home name)
+        else
+          Names.registerGlobal home name
 
     Can.VarKernel home name ->
       Names.registerKernel home (Opt.VarKernel home name)
@@ -108,18 +110,20 @@ optimize cycle (A.At region expression) =
         <*> optimize cycle finally
 
     Can.Let def body ->
-      optimizeDef cycle def =<< optimize cycle body
+      Debug.Trace.trace ("consume Can.Let " <> show def) $
+        optimizeDef cycle def =<< optimize cycle body
 
     Can.LetRec defs body ->
-      case defs of
-        [def] ->
-          Opt.Let
-            <$> optimizePotentialTailCallDef cycle def
-            <*> optimize cycle body
+      Debug.Trace.trace (showString "consume Can.LetRec " . showList defs $ "") $
+        case defs of
+          [def] ->
+            Opt.Let
+              <$> optimizePotentialTailCallDef cycle def
+              <*> optimize cycle body
 
-        _ ->
-          do  obody <- optimize cycle body
-              foldM (\bod def -> optimizeDef cycle def bod) obody defs
+          _ ->
+            do  obody <- optimize cycle body
+                foldM (\bod def -> optimizeDef cycle def bod) obody defs
 
     Can.LetDestruct pattern expr body ->
       do  (name, destructs) <- destruct pattern
@@ -191,7 +195,8 @@ optimizeDef :: Cycle -> Can.Def -> Opt.Expr -> Names.Tracker Opt.Expr
 optimizeDef cycle def body =
   case def of
     Can.Def (A.At _ name) args expr ->
-      optimizeDefHelp cycle name args expr body
+      Debug.Trace.trace ("consume Can.Def " <> Name.toChars name) $
+        optimizeDefHelp cycle name args expr body
 
     Can.TypedDef (A.At _ name) _ typedArgs expr _ ->
       optimizeDefHelp cycle name (map fst typedArgs) expr body
@@ -442,13 +447,18 @@ optimizeTail cycle rootName argNames locExpr@(A.At _ expression) =
 -- DETECT TAIL CALLS
 
 
+-- pxfnc: hasTailCallであることと同時に、内部のFunctionがLocal変数を参照していないか確認
 toTailDef :: Name.Name -> [Name.Name] -> [Opt.Destructor] -> Opt.Expr -> Opt.Def
 toTailDef name argNames destructors body =
   if hasTailCall body then
+    Debug.Trace.trace ("target expr ---> " <> show body ) . Debug.Trace.trace ("generate Opt.TailDef " <> Name.toChars name) $ 
     Opt.TailDef name argNames (foldr Opt.Destruct body destructors)
   else
     Opt.Def name (Opt.Function argNames (foldr Opt.Destruct body destructors))
 
+
+--  
+-- みつけた関数をhasLocalVariableReference
 
 hasTailCall :: Opt.Expr -> Bool
 hasTailCall expression =

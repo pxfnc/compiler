@@ -6,6 +6,9 @@ module Generate.JavaScript.Name
   , fromIndex
   , fromInt
   , fromLocal
+  , fromLocalForTailDef
+  , fromLocalForLoop
+  , fromLocalForReturnValue
   , fromGlobal
   , fromCycle
   , fromKernel
@@ -60,6 +63,26 @@ fromLocal name =
   else
     Name (Name.toBuilder name)
 
+fromLocalForTailDef :: Name.Name -> Name
+fromLocalForTailDef name =
+  if Set.member name reservedNames then
+    Name ("_mut_" <> Name.toBuilder name)
+  else
+    Name ("mut_" <> Name.toBuilder name)
+
+fromLocalForLoop :: Name.Name -> Name
+fromLocalForLoop name =
+  if Set.member name reservedNames then
+    Name ("_loop" <> Name.toBuilder name)
+  else
+    Name ("loop" <> Name.toBuilder name)
+
+fromLocalForReturnValue:: Name.Name -> Name
+fromLocalForReturnValue name =
+  if Set.member name reservedNames then
+    Name ("_ret_" <> Name.toBuilder name)
+  else
+    Name ("ret_" <> Name.toBuilder name)
 
 fromGlobal :: ModuleName.Canonical -> Name.Name -> Name
 fromGlobal home name =
